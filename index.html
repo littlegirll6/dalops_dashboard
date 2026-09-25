@@ -1,1 +1,155 @@
-The requested file reference is not currently visible. Use files.search or files.list to rediscover the file, then retry with a returned ref_id or file_id.
+<!doctype html><html lang="id"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PKBU & Jakon Risk Dashboard</title>
+<style>
+*{box-sizing:border-box}:root{--bg:#f4f6f9;--card:#fff;--ink:#172033;--muted:#697386;--line:#e5e9ef;--blue:#315efb;--navy:#16233f}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:1380px;margin:auto;padding:30px 34px 50px}.header{display:flex;justify-content:space-between;gap:20px;margin-bottom:24px}
+h1{margin:0;font-size:30px;letter-spacing:-.7px}.sub{color:var(--muted);font-size:13px;margin-top:7px}
+.tag{background:#eaf0ff;color:#2548c7;border-radius:20px;padding:8px 12px;font-size:11px;font-weight:700}
+.filters{display:grid;grid-template-columns:220px 260px 1fr;gap:12px;margin-bottom:18px}
+select,input{border:1px solid var(--line);border-radius:10px;background:white;padding:11px 13px;font-size:13px;color:var(--ink)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:15px;box-shadow:0 2px 10px rgba(20,35,63,.035)}
+.kpi{padding:17px 18px}.kpi-label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.05em}.kpi-value{font-size:29px;font-weight:800;margin-top:7px}
+.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}.panel{padding:19px}.panel h2{font-size:16px;margin:0}.note{font-size:12px;color:var(--muted);margin:5px 0 16px}
+.chart{height:310px;display:flex;align-items:flex-end;gap:10px;border-bottom:1px solid var(--line);padding:0 5px}
+.bar-col{height:100%;flex:1;display:flex;flex-direction:column;justify-content:flex-end;min-width:30px}.bar-value{font-size:10px;text-align:center;font-weight:700;margin-bottom:4px}
+.bar{background:var(--blue);border-radius:6px 6px 0 0;min-height:3px}.region .bar{background:var(--navy)}
+.bar-label{font-size:9px;color:var(--muted);margin-top:7px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.table-panel{margin-top:16px}.table-wrap{overflow:auto;max-height:430px}table{border-collapse:collapse;width:100%;font-size:12px}
+th{position:sticky;top:0;background:white;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em;text-align:left;padding:11px 9px;border-bottom:1px solid var(--line)}
+td{padding:12px 9px;border-bottom:1px solid var(--line);vertical-align:top}.risk-row{cursor:pointer}.risk-row:hover{background:#f8faff}
+.risk-name{font-weight:700}.category{color:var(--muted);font-size:11px;margin-top:3px}.num{font-weight:800}
+.detail{display:none;margin-top:16px}.detail-header{display:flex;justify-content:space-between;gap:20px}.detail-title{font-size:19px;font-weight:800}
+.detail-def{font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5}.close{border:1px solid var(--line);background:white;border-radius:8px;padding:7px 10px;cursor:pointer}
+.finding{border:1px solid var(--line);border-radius:11px;padding:13px;margin-top:10px;background:#fbfcfe}.meta{font-size:10px;color:var(--muted);margin-bottom:7px}.text{font-size:12px;line-height:1.55}
+.empty{color:var(--muted);font-size:13px;padding:30px;text-align:center}.footer{font-size:10px;color:var(--muted);margin-top:16px}
+@media(max-width:900px){.wrap{padding:20px}.kpis{grid-template-columns:repeat(2,1fr)}.grid,.filters{grid-template-columns:1fr}}
+</style></head><body><div class="wrap">
+<div class="header"><div><h1>PKBU & Jakon — Risk Dashboard</h1>
+<div class="sub">Pendaftaran PKBU Baru dan Jakon · April 2026 · Sumbagut, Sumbagsel & DKI Jakarta</div></div><div class="tag">RISK MONITORING</div></div>
+<div class="filters"><select id="region"><option value="">All Region</option></select><select id="office"><option value="">All Kantor</option></select><input id="search" placeholder="Search finding, kantor, risk, or recommendation..."></div>
+<div class="kpis"><div class="card kpi"><div class="kpi-label">KANTOR</div><div class="kpi-value" id="kpiOffice">0</div></div>
+<div class="card kpi"><div class="kpi-label">ISSUE / DEVIATION FINDINGS</div><div class="kpi-value" id="kpiFinding">0</div></div>
+<div class="card kpi"><div class="kpi-label">ACTIVE RISKS</div><div class="kpi-value" id="kpiRisk">0</div></div>
+<div class="card kpi"><div class="kpi-label">RECOMMENDATIONS</div><div class="kpi-value" id="kpiRec">0</div></div></div>
+<div class="grid"><div class="card panel"><h2>Risk Frequency</h2><div class="note">Number of findings mapped to each standardized risk.</div><div id="riskChart" class="chart"></div></div>
+<div class="card panel"><h2>Findings by Region</h2><div class="note">Issue/deviation findings after filtering.</div><div id="regionChart" class="chart region"></div></div></div>
+<div class="card panel table-panel"><h2>Recurring Risks</h2><div class="note">Click a risk to see the original findings behind the frequency.</div>
+<div class="table-wrap"><table><thead><tr><th>Standardized Risk</th><th>Findings</th><th>Affected Kantor</th><th>Regions</th></tr></thead><tbody id="riskTable"></tbody></table></div></div>
+<div class="card panel detail" id="detail"><div class="detail-header"><div><div class="detail-title" id="detailTitle"></div><div class="detail-def" id="detailDef"></div></div><button class="close" id="close">Close</button></div><div id="detailRows"></div></div>
+<div class="footer">Source: processed PKBU/Jakon workbook. Original finding text is retained; repeated risks are aggregated rather than deleted.</div>
+</div>
+<script>
+(function(){
+  function E(id){return document.getElementById(id);}
+  function esc(v){
+    return String(v==null?"":v).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function getFiltered(){
+    var rg=E("region").value, of=E("office").value, q=E("search").value.toLowerCase().trim(), out=[];
+    for(var i=0;i<DATA.findings.length;i++){
+      var f=DATA.findings[i];
+      if(rg && f.Region!==rg) continue;
+      if(of && f["Nama Kantor"]!==of) continue;
+      if(q){
+        var s=(f.Region+" "+f["Nama Kantor"]+" "+f["Original Finding"]+" "+f["Original Risk/Dampak"]+" "+f["Original Recommendation"]).toLowerCase();
+        if(s.indexOf(q)<0) continue;
+      }
+      out.push(f);
+    }
+    return out;
+  }
+  function render(){
+    var fs=getFiltered(), ids={}, freq={}, officeRisk={}, regionFreq={}, officeSet={};
+    for(var i=0;i<fs.length;i++){ids[fs[i]["Finding ID"]]=true;officeSet[fs[i]["Kode Kantor"]]=true;}
+    for(var j=0;j<DATA.mapping.length;j++){
+      var m=DATA.mapping[j];
+      if(!ids[m["Finding ID"]]) continue;
+      var rid=m["Risk ID"];
+      freq[rid]=(freq[rid]||0)+1;
+      if(!officeRisk[rid]) officeRisk[rid]={};
+      for(var k=0;k<fs.length;k++){
+        if(fs[k]["Finding ID"]===m["Finding ID"]){
+          officeRisk[rid][fs[k]["Kode Kantor"]]=true;
+          regionFreq[fs[k].Region]=(regionFreq[fs[k].Region]||0)+1;
+          break;
+        }
+      }
+    }
+    var rows=[];
+    for(var r=0;r<DATA.risks.length;r++){
+      var risk=DATA.risks[r], n=freq[risk.id]||0;
+      if(n>0) rows.push({id:risk.id,name:risk.name,category:risk.category,definition:risk.definition,findings:n,kantor:Object.keys(officeRisk[risk.id]||{}).length});
+    }
+    rows.sort(function(a,b){return b.findings-a.findings;});
+    E("kpiOffice").textContent=Object.keys(officeSet).length;
+    E("kpiFinding").textContent=fs.length;
+    E("kpiRisk").textContent=rows.length;
+    E("kpiRec").textContent=DATA.recommendations;
+    drawBars("riskChart",rows.slice(0,10),false);
+    var rr=[],key;
+    for(key in regionFreq) rr.push({name:key,findings:regionFreq[key]});
+    drawBars("regionChart",rr,true);
+    drawTable(rows);
+  }
+  function drawBars(id,rows,isRegion){
+    var box=E(id); box.innerHTML="";
+    if(!rows.length){box.innerHTML='<div class="empty">No data for the selected filters.</div>';return;}
+    var max=1;
+    for(var i=0;i<rows.length;i++) if(rows[i].findings>max) max=rows[i].findings;
+    for(var j=0;j<rows.length;j++){
+      var x=rows[j], c=document.createElement("div"), v=document.createElement("div"), b=document.createElement("div"), l=document.createElement("div");
+      c.className="bar-col"; v.className="bar-value"; v.textContent=x.findings;
+      b.className="bar"+(isRegion?" region":""); b.style.height=(Math.round(x.findings/max*245)+3)+"px";
+      l.className="bar-label"; l.textContent=x.name; l.title=x.name;
+      c.appendChild(v);c.appendChild(b);c.appendChild(l);box.appendChild(c);
+    }
+  }
+  function drawTable(rows){
+    var body=E("riskTable"); body.innerHTML="";
+    if(!rows.length){body.innerHTML='<tr><td colspan="4" class="empty">No matching risks.</td></tr>';return;}
+    for(var i=0;i<rows.length;i++){
+      (function(r){
+        var tr=document.createElement("tr"), reg={};
+        for(var j=0;j<DATA.mapping.length;j++){
+          var m=DATA.mapping[j]; if(m["Risk ID"]!==r.id) continue;
+          for(var k=0;k<DATA.findings.length;k++){
+            if(DATA.findings[k]["Finding ID"]===m["Finding ID"]){reg[DATA.findings[k].Region]=true;break;}
+          }
+        }
+        tr.className="risk-row";
+        tr.innerHTML='<td><div class="risk-name">'+esc(r.name)+'</div><div class="category">'+esc(r.category)+'</div></td><td class="num">'+r.findings+'</td><td class="num">'+r.kantor+'</td><td>'+Object.keys(reg).length+'</td>';
+        tr.onclick=function(){showRisk(r.id);}; body.appendChild(tr);
+      })(rows[i]);
+    }
+  }
+  function showRisk(id){
+    var r=null;
+    for(var i=0;i<DATA.risks.length;i++) if(DATA.risks[i].id===id){r=DATA.risks[i];break;}
+    var fs=getFiltered(), linked={};
+    for(var j=0;j<DATA.mapping.length;j++) if(DATA.mapping[j]["Risk ID"]===id) linked[DATA.mapping[j]["Finding ID"]]=true;
+    var out=[];
+    for(var k=0;k<fs.length;k++) if(linked[fs[k]["Finding ID"]]) out.push(fs[k]);
+    E("detailTitle").textContent=r?r.name:"Risk";
+    E("detailDef").textContent=r?r.definition:"";
+    var html="";
+    for(var n=0;n<out.length;n++){
+      var f=out[n];
+      html+='<div class="finding"><div class="meta">'+esc(f.Region)+' · '+esc(f["Nama Kantor"])+' · '+esc(f["Kode Kantor"])+'</div><div class="text"><b>Finding:</b> '+esc(f["Original Finding"])+'</div><div class="text"><b>Risk/Dampak:</b> '+esc(f["Original Risk/Dampak"])+'</div><div class="text"><b>Recommendation:</b> '+esc(f["Original Recommendation"])+'</div></div>';
+    }
+    E("detailRows").innerHTML=html||'<div class="empty">No findings under current filters.</div>';
+    E("detail").style.display="block";
+  }
+  function init(){
+    for(var i=0;i<DATA.regions.length;i++){var o=document.createElement("option");o.value=DATA.regions[i];o.textContent=DATA.regions[i];E("region").appendChild(o);}
+    for(var j=0;j<DATA.offices.length;j++){var p=document.createElement("option");p.value=DATA.offices[j];p.textContent=DATA.offices[j];E("office").appendChild(p);}
+    E("region").onchange=render;E("office").onchange=render;E("search").oninput=render;
+    E("close").onclick=function(){E("detail").style.display="none";};
+    render();
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init); else init();
+})();
+</script></body></html>
